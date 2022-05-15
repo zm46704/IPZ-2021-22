@@ -4,10 +4,19 @@ import re
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import pyodbc
+
+server = 'ipzazuresql.database.windows.net'
+database = 'ipz2db'
+username = 'osuch'
+password = 'IPZ_2022_sem_letni'
+conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+cursor = conn.cursor()
+
+car_makers = pd.read_sql('SELECT * FROM Manufacturers', conn)
 
 #wyznaczenie akltualnej daty
 today = datetime.now().date()
-
 
 #funkcja usuwajaca tagi html
 def striphtml(data):
@@ -53,20 +62,27 @@ for i in range(len(car_makers)):
     #print()
 
 # tworzenie dataframu z list
-today = datetime.now().date()
-data = {'manu_id': ids, 'date': date, 'rank': rank, 'marketcap ($)': marketcap, 'share_price ($)': share_price, 'change_day (%)': change_day, 'change_year (%)': change_year }
+data = {'manu_id': ids, 'date': date, 'rank_': rank, 'marketcap': marketcap, 'share_price': share_price, 'change_day': change_day, 'change_year': change_year }
 df = pd.DataFrame(data)
-#print(df)
 
 #formatowanie kolumn
-df['rank'] = df['rank'].apply(lambda val: val[1:])
-df['marketcap ($)'] = df['marketcap ($)'].apply(lambda val: val[1:])
-df['share_price ($)'] = df['share_price ($)'].apply(lambda val: val[1:])
-df['change_day (%)'] = df['change_day (%)'].apply(lambda val: val[:-1])
-df['change_year (%)'] = df['change_year (%)'].apply(lambda val: val[:-1])
-df.loc[df['change_year (%)'] == "N/", "change_year (%)"] = ''
+df['rank_'] = df['rank_'].apply(lambda val: val[1:])
+df['marketcap'] = df['marketcap'].apply(lambda val: val[1:])
+df['share_price'] = df['share_price'].apply(lambda val: val[1:])
+df['change_day'] = df['change_day'].apply(lambda val: val[:-1])
+df['change_year'] = df['change_year'].apply(lambda val: val[:-1])
+df.loc[df['change_year'] == "N/", "change_year"] = ''
 
-print(df)
+#print(df)
 
-df.to_csv('automakers_webscraping_24_04.csv')
+for index, row in df.iterrows():
+    marketcap = row.marketcap
+    if marketcap[-1] == 'B':
+        marketcap = float(marketcap[0:-2]) * 10**9
+    elif marketcap[-1] == 'T':
+        marketcap = float(marketcap[0:-2]) * 10**12
+
+    cursor.execute("INSERT INTO CompaniesMarketCapData (manu_id, date_, rank_, marketcap, share_price, change_day, change_year) values(?,?,?,?,?,?,?)", row.manu_id, row.date, row.rank_, marketcap, row.share_price, row.change_day, row.change_year)
+conn.commit()
+cursor.close()
 
