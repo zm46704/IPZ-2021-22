@@ -23,9 +23,6 @@ def striphtml(data):
     p = re.compile(r'<.*?>')
     return p.sub('', data)
 
-# plik z info o producentach aut
-car_makers = pd.read_excel('../car_makers_update2.xlsx')
-
 ids = list()
 rank = list()
 date = list()
@@ -85,4 +82,5 @@ for index, row in df.iterrows():
     cursor.execute("INSERT INTO CompaniesMarketCapData (manu_id, date_, rank_, marketcap, share_price, change_day, change_year) values(?,?,?,?,?,?,?)", row.manu_id, row.date, row.rank_, marketcap, row.share_price, row.change_day, row.change_year)
 conn.commit()
 cursor.close()
+
 

@@ -37,13 +37,13 @@ auth.set_access_token(access_token, access_token_secret)
 api = tweepy.API(auth)
 
 # user tweets
-limit=100
+limit=150
 # create DataFrame
 columns = ['manu_id', 'date', 'likes', 'tweet']
 data = []
 
 #wyznaczenie daty (dane pobierane z ostatniych 2 tygodni wiec sprawdzamy date w tygodnie wstecz)
-since_when = datetime.now() - timedelta(days = 14)
+since_when = datetime.now() - timedelta(days = 21)
 
 for i, tw_name in enumerate(car_makers["tw_name"]):
     print(tw_name)
@@ -135,11 +135,11 @@ def analysis(score):
 
 def analysis_val(score):
     if score < 0:
-        return 1
+        return -1
     elif score == 0:
         return 0
     else:
-        return -1
+        return 1
 
 
 fin_data = pd.DataFrame(mydata[['manu_id', 'date', 'tweet', 'Lemma']])
@@ -150,8 +150,11 @@ fin_data['Analysis_val'] = fin_data['Polarity'].apply(analysis_val)
 fin_data.head()
 
 for index, row in fin_data.iterrows():
+    tweet = str(row.tweet)
+    if len(tweet) > 240:
+        tweet = tweet[0:240] + '...'
     date = row.date.strftime('%Y-%m-%d')
-    cursor.execute("INSERT INTO Tweets (manu_id, date_, subjectivity, polarity, analysis, analysis_val) values(?,?,?,?,?,?)", int(row.manu_id), date, row.Subjectivity, row.Polarity, row.Analysis, row.Analysis_val)
+    cursor.execute("INSERT INTO Tweets (manu_id, date_, tweet, subjectivity, polarity, analysis, analysis_val) values(?,?,?,?,?,?,?)", int(row.manu_id), date, tweet, row.Subjectivity, row.Polarity, row.Analysis, row.Analysis_val)
 conn.commit()
 
 
